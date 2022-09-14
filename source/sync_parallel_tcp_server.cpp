@@ -19,7 +19,7 @@ class Service {
             asio::read_until(*sock.get(), request, '\n');
             // Emulate request processing.
             int i = 0;
-            while (i != 1000000) i++;   
+            while (i != 1000000) i++;
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             // Sending response.
             std::string response = "Response\n";
@@ -33,13 +33,21 @@ class Service {
 };
 class Acceptor {
    public:
-    Acceptor(asio::io_service& ios, unsigned short port_num)
-        : m_ios(ios), m_acceptor(m_ios, asio::ip::tcp::endpoint(asio::ip::address_v4::any(), port_num)) {
-        // m_acceptor.listen();
+    // Acceptor(asio::io_service& ios, unsigned short port_num)
+    //     : m_ios(ios), m_acceptor(m_ios, asio::ip::tcp::endpoint(asio::ip::address_v4::any(), port_num)) {
+    //     // m_acceptor.listen();
+    // }
+    Acceptor(asio::io_service& ios, unsigned short port_num) : m_ios(ios), m_acceptor(m_ios) {
+        boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), port_num);
+        m_acceptor.open(endpoint.protocol());
+        m_acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+        m_acceptor.bind(endpoint);
+        m_acceptor.listen();
     }
     void Accept() {
-        std::shared_ptr<asio::ip::tcp::socket> sock(new asio::ip::tcp::socket(m_ios));
-        m_acceptor.accept(*sock.get());
+        std::shared_ptr<asio::ip::tcp::socket> sock = std::make_shared<asio::ip::tcp::socket> (m_ios);
+        m_acceptor.accept(*(sock.get()));
+        std::cout << "remote: " << sock->remote_endpoint().address() << std::endl;
         (new Service)->StartHandligClient(sock);
     }
 
@@ -70,11 +78,11 @@ class Server {
     asio::io_service m_ios;
 };
 int main() {
-    unsigned short port_num = 3333;
+    unsigned short port_num = 12345;
     try {
         Server srv;
         srv.Start(port_num);
-        std::this_thread::sleep_for(std::chrono::seconds(60));
+        std::this_thread::sleep_for(std::chrono::seconds(600));
         srv.Stop();
     } catch (system::system_error& e) {
         std::cout << "Error occured! Error code = " << e.code() << ". Message: " << e.what();
