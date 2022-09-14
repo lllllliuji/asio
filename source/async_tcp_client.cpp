@@ -1,6 +1,7 @@
 #include <boost/asio.hpp>
 #include <boost/noncopyable.hpp>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -36,9 +37,13 @@ struct Session {
 };
 class AsyncTCPClient : public boost::noncopyable {
    public:
-    AsyncTCPClient() {
+    AsyncTCPClient(unsigned char num_of_threads) {
         m_work.reset(new boost::asio::io_service::work(m_ios));
-        m_thread.reset(new std::thread([this]() { m_ios.run(); }));
+        // m_thread.reset(new std::thread([this]() { m_ios.run(); }));
+        for (unsigned char i = 1; i <= num_of_threads; i++) {
+            std::unique_ptr<std::thread> ptr_t = std::make_unique<std::thread>([this]() { m_ios.run(); });
+            m_threads.push_back(std::move(ptr_t));
+        }
     }
     void emulateLongComputationOp(unsigned int duration_sec, const std::string& raw_ip_address, unsigned short port_num,
                                   Callback callback, unsigned int request_id) {
@@ -111,7 +116,9 @@ class AsyncTCPClient : public boost::noncopyable {
         // asynchronous operations.
         m_work.reset(NULL);
         // Wait for the I/O thread to exit.
-        m_thread->join();
+        for (auto& thread : m_threads) {
+            thread->join();
+        }
     }
 
    private:
@@ -141,7 +148,8 @@ class AsyncTCPClient : public boost::noncopyable {
     std::map<int, std::shared_ptr<Session>> m_active_sessions;
     std::mutex m_active_sessions_guard;
     std::unique_ptr<boost::asio::io_service::work> m_work;
-    std::unique_ptr<std::thread> m_thread;
+    // std::unique_ptr<std::thread> m_thread;
+    std::list<std::unique_ptr<std::thread>> m_threads;
 };
 
 void handler(unsigned int request_id, const std::string& response, const system::error_code& ec) {
@@ -156,9 +164,9 @@ void handler(unsigned int request_id, const std::string& response, const system:
     return;
 }
 int main() {
-    const std::string raw_ip_address = "172.24.112.1";
+    const std::string raw_ip_address = "172.30.144.1";
     try {
-        AsyncTCPClient client;
+        AsyncTCPClient client(10);
         // Here we emulate the user's behavior.
         // User initiates a request with id 1.
         client.emulateLongComputationOp(10, raw_ip_address, 12345, handler, 1);
