@@ -164,24 +164,25 @@ void handler(unsigned int request_id, const std::string& response, const system:
     return;
 }
 int main() {
-    const std::string raw_ip_address = "172.30.144.1";
+    // const std::string raw_ip_address = "172.30.144.1";
+    const std::string raw_ip_address = "127.0.0.1";
     try {
         AsyncTCPClient client(10);
         // Here we emulate the user's behavior.
         // User initiates a request with id 1.
         client.emulateLongComputationOp(10, raw_ip_address, 12345, handler, 1);
         // Then does nothing for 5 seconds.
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         // Then initiates another request with id 2.
         client.emulateLongComputationOp(11, raw_ip_address, 12345, handler, 2);
         // Then decides to cancel the request with id 1.
         client.cancelRequest(1);
         // Does nothing for another 6 seconds.
-        std::this_thread::sleep_for(std::chrono::seconds(6));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         // Initiates one more request assigning ID3 to it.
         client.emulateLongComputationOp(12, raw_ip_address, 12345, handler, 3);
         // Does nothing for another 15 seconds.
-        std::this_thread::sleep_for(std::chrono::seconds(15));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         // Decides to exit the application.
         client.close();
     } catch (system::system_error& e) {
