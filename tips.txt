@@ -1,1 +1,0 @@
-g++ -o http-server http_server_app.cpp -lboost_filesystem -lboost_system
