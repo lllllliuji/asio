@@ -192,7 +192,7 @@ class HTTPRequest {
         std::string status_message;
         std::istream response_stream(&m_response.get_response_buf());
         response_stream >> http_version;
-        if (http_version != "HTTP/1.0") {
+        if (http_version != "HTTP/1.1") {
             // Response is incorrect.
             on_finish(http_errors::invalid_response);
             return;
